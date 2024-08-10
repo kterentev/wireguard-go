@@ -86,6 +86,10 @@ type Device struct {
 		mtu    atomic.Int32
 	}
 
+	features struct {
+		packet bool
+	}
+
 	ipcMutex sync.RWMutex
 	closed   chan struct{}
 	log      *Logger
@@ -281,7 +285,7 @@ func (device *Device) SetPrivateKey(sk NoisePrivateKey) error {
 	return nil
 }
 
-func NewDevice(tunDevice tun.Device, bind conn.Bind, logger *Logger) *Device {
+func NewDevice(tunDevice tun.Device, bind conn.Bind, logger *Logger, packet bool) *Device {
 	device := new(Device)
 	device.state.state.Store(uint32(deviceStateDown))
 	device.closed = make(chan struct{})
@@ -294,6 +298,7 @@ func NewDevice(tunDevice tun.Device, bind conn.Bind, logger *Logger) *Device {
 		mtu = DefaultMTU
 	}
 	device.tun.mtu.Store(int32(mtu))
+	device.features.packet = packet
 	device.peers.keyMap = make(map[NoisePublicKey]*Peer)
 	device.rate.limiter.Init()
 	device.indexTable.Init()

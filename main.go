@@ -30,10 +30,11 @@ const (
 	ENV_WG_TUN_FD             = "WG_TUN_FD"
 	ENV_WG_UAPI_FD            = "WG_UAPI_FD"
 	ENV_WG_PROCESS_FOREGROUND = "WG_PROCESS_FOREGROUND"
+	ENV_WG_PACKET_HANDSHAKE   = "WG_PACKET_HANDSHAKE"
 )
 
 func printUsage() {
-	fmt.Printf("Usage: %s [-f/--foreground] INTERFACE-NAME\n", os.Args[0])
+	fmt.Printf("Usage: %s [-f/--foreground] [-p/--packet] INTERFACE-NAME\n", os.Args[0])
 }
 
 func warning() {
@@ -66,33 +67,34 @@ func main() {
 	warning()
 
 	var foreground bool
+	var packet bool
 	var interfaceName string
-	if len(os.Args) < 2 || len(os.Args) > 3 {
+
+	if len(os.Args) < 2 || len(os.Args) > 4 {
 		printUsage()
 		return
 	}
 
-	switch os.Args[1] {
-
-	case "-f", "--foreground":
-		foreground = true
-		if len(os.Args) != 3 {
+	for _, arg := range os.Args[1 : len(os.Args) - 1] {
+		switch arg {
+		case "-f", "--foreground":
+			foreground = true
+		case "-p", "--packet":
+			packet = true
+		default:
 			printUsage()
 			return
 		}
-		interfaceName = os.Args[2]
-
-	default:
-		foreground = false
-		if len(os.Args) != 2 {
-			printUsage()
-			return
-		}
-		interfaceName = os.Args[1]
 	}
+
+	interfaceName = os.Args[len(os.Args) - 1]
 
 	if !foreground {
 		foreground = os.Getenv(ENV_WG_PROCESS_FOREGROUND) == "1"
+	}
+
+	if !packet {
+		packet = os.Getenv(ENV_WG_PACKET_HANDSHAKE) == "1"
 	}
 
 	// get log level (default: info)
@@ -169,6 +171,7 @@ func main() {
 
 		return os.NewFile(uintptr(fd), ""), nil
 	}()
+
 	if err != nil {
 		logger.Errorf("UAPI listen error: %v", err)
 		os.Exit(ExitSetupFailed)
@@ -181,6 +184,7 @@ func main() {
 		env = append(env, fmt.Sprintf("%s=3", ENV_WG_TUN_FD))
 		env = append(env, fmt.Sprintf("%s=4", ENV_WG_UAPI_FD))
 		env = append(env, fmt.Sprintf("%s=1", ENV_WG_PROCESS_FOREGROUND))
+		env = append(env, fmt.Sprintf("%s=%s", ENV_WG_PACKET_HANDSHAKE, os.Getenv(ENV_WG_PACKET_HANDSHAKE)))
 		files := [3]*os.File{}
 		if os.Getenv("LOG_LEVEL") != "" && logLevel != device.LogLevelSilent {
 			files[0], _ = os.Open(os.DevNull)
@@ -222,7 +226,7 @@ func main() {
 		return
 	}
 
-	device := device.NewDevice(tdev, conn.NewDefaultBind(), logger)
+	device := device.NewDevice(tdev, conn.NewDefaultBind(), logger, packet)
 
 	logger.Verbosef("Device started")
 
