@@ -24,6 +24,7 @@ type Peer struct {
 	txBytes           atomic.Uint64  // bytes send to peer (endpoint)
 	rxBytes           atomic.Uint64  // bytes received from peer
 	lastHandshakeNano atomic.Int64   // nano seconds since epoch
+	xorValue          atomic.Uint64  // xor value for inbound/outbound packets if enabled
 
 	endpoint struct {
 		sync.Mutex
@@ -132,6 +133,14 @@ func (peer *Peer) SendBuffers(buffers [][]byte) error {
 		peer.endpoint.clearSrcOnTx = false
 	}
 	peer.endpoint.Unlock()
+
+	if peer.device.features.xor {
+		if xorValue := uint8(peer.xorValue.Load()); xorValue != 0 {
+			for _, buffer := range buffers {
+				XorBuffer(buffer, xorValue)
+			}
+		}
+	}
 
 	err := peer.device.net.bind.Send(buffers, endpoint)
 	if err == nil {

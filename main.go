@@ -31,10 +31,11 @@ const (
 	ENV_WG_UAPI_FD            = "WG_UAPI_FD"
 	ENV_WG_PROCESS_FOREGROUND = "WG_PROCESS_FOREGROUND"
 	ENV_WG_PACKET_HANDSHAKE   = "WG_PACKET_HANDSHAKE"
+	ENV_WG_PACKET_XOR         = "WG_PACKET_XOR"
 )
 
 func printUsage() {
-	fmt.Printf("Usage: %s [-f/--foreground] [-p/--packet] INTERFACE-NAME\n", os.Args[0])
+	fmt.Printf("Usage: %s [-f/--foreground] [-p/--packet] [-x/--xor] INTERFACE-NAME\n", os.Args[0])
 }
 
 func warning() {
@@ -68,9 +69,10 @@ func main() {
 
 	var foreground bool
 	var packet bool
+	var xor bool
 	var interfaceName string
 
-	if len(os.Args) < 2 || len(os.Args) > 4 {
+	if len(os.Args) < 2 || len(os.Args) > 5 {
 		printUsage()
 		return
 	}
@@ -81,6 +83,8 @@ func main() {
 			foreground = true
 		case "-p", "--packet":
 			packet = true
+		case "-x", "--xor":
+			xor = true
 		default:
 			printUsage()
 			return
@@ -95,6 +99,10 @@ func main() {
 
 	if !packet {
 		packet = os.Getenv(ENV_WG_PACKET_HANDSHAKE) == "1"
+	}
+
+	if !xor {
+		xor = os.Getenv(ENV_WG_PACKET_XOR) == "1"
 	}
 
 	// get log level (default: info)
@@ -185,6 +193,7 @@ func main() {
 		env = append(env, fmt.Sprintf("%s=4", ENV_WG_UAPI_FD))
 		env = append(env, fmt.Sprintf("%s=1", ENV_WG_PROCESS_FOREGROUND))
 		env = append(env, fmt.Sprintf("%s=%s", ENV_WG_PACKET_HANDSHAKE, os.Getenv(ENV_WG_PACKET_HANDSHAKE)))
+		env = append(env, fmt.Sprintf("%s=%s", ENV_WG_PACKET_XOR, os.Getenv(ENV_WG_PACKET_XOR)))
 		files := [3]*os.File{}
 		if os.Getenv("LOG_LEVEL") != "" && logLevel != device.LogLevelSilent {
 			files[0], _ = os.Open(os.DevNull)
@@ -226,7 +235,7 @@ func main() {
 		return
 	}
 
-	device := device.NewDevice(tdev, conn.NewDefaultBind(), logger, packet)
+	device := device.NewDevice(tdev, conn.NewDefaultBind(), logger, packet, xor)
 
 	logger.Verbosef("Device started")
 

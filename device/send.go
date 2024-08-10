@@ -260,6 +260,12 @@ func (device *Device) SendHandshakeCookie(initiatingElem *QueueHandshakeElement)
 	var buf [MessageCookieReplySize]byte
 	writer := bytes.NewBuffer(buf[:0])
 	binary.Write(writer, binary.LittleEndian, reply)
+	cookie := writer.Bytes()
+
+	// device.features.xor check omitted intentionally since elem value.xorValue DO NOT change without the feature
+	if initiatingElem.xorValue != 0 {
+		XorBuffer(cookie, initiatingElem.xorValue)
+	}
 
 	if device.features.packet {
 		err = device.net.bind.Send([][]byte{fakeHttpResponse}, initiatingElem.endpoint)
@@ -269,7 +275,7 @@ func (device *Device) SendHandshakeCookie(initiatingElem *QueueHandshakeElement)
 	}
 
 	// TODO: allocation could be avoided
-	device.net.bind.Send([][]byte{writer.Bytes()}, initiatingElem.endpoint)
+	device.net.bind.Send([][]byte{cookie}, initiatingElem.endpoint)
 
 	return nil
 }

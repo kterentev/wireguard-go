@@ -24,6 +24,7 @@ type QueueHandshakeElement struct {
 	packet   []byte
 	endpoint conn.Endpoint
 	buffer   *[MaxMessageSize]byte
+	xorValue uint8
 }
 
 type QueueInboundElement struct {
@@ -92,6 +93,7 @@ func (device *Device) RoutineReceiveIncoming(maxBatchSize int, recv conn.Receive
 		endpoints   = make([]conn.Endpoint, maxBatchSize)
 		deathSpiral int
 		elemsByPeer = make(map[*Peer]*QueueInboundElementsContainer, maxBatchSize)
+		xorValue    uint8
 	)
 
 	for i := range bufsArrs {
@@ -135,6 +137,17 @@ func (device *Device) RoutineReceiveIncoming(maxBatchSize int, recv conn.Receive
 			// check size of packet
 
 			packet := bufsArrs[i][:size]
+
+			if device.features.xor {
+				if packet[1] != 0 && packet[1] == packet[2] && packet[1] == packet[3] {
+					xorValue = packet[1]
+
+					XorBuffer(packet, xorValue)
+				} else {
+					xorValue = 0
+				}
+			}
+
 			msgType := binary.LittleEndian.Uint32(packet[:4])
 
 			switch msgType {
@@ -214,6 +227,7 @@ func (device *Device) RoutineReceiveIncoming(maxBatchSize int, recv conn.Receive
 				buffer:   bufsArrs[i],
 				packet:   packet,
 				endpoint: endpoints[i],
+				xorValue: xorValue,
 			}:
 				bufsArrs[i] = device.GetMessageBuffer()
 				bufs[i] = bufsArrs[i][:]
@@ -302,6 +316,11 @@ func (device *Device) RoutineHandshake(id int) {
 				goto skip
 			}
 
+			// set xor value
+			if elem.xorValue != 0 {
+				entry.peer.xorValue.Store(uint64(elem.xorValue))
+			}
+
 			// consume reply
 
 			if peer := entry.peer; peer.isRunning.Load() {
@@ -368,6 +387,11 @@ func (device *Device) RoutineHandshake(id int) {
 				goto skip
 			}
 
+			// set xor value
+			if elem.xorValue != 0 {
+				peer.xorValue.Store(uint64(elem.xorValue))
+			}
+
 			// update timers
 
 			peer.timersAnyAuthenticatedPacketTraversal()
@@ -399,6 +423,11 @@ func (device *Device) RoutineHandshake(id int) {
 			if peer == nil {
 				device.log.Verbosef("Received invalid response message from %s", elem.endpoint.DstToString())
 				goto skip
+			}
+
+			// set xor value
+			if elem.xorValue != 0 {
+				peer.xorValue.Store(uint64(elem.xorValue))
 			}
 
 			// update endpoint

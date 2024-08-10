@@ -30,6 +30,7 @@ const (
 	MinMessageSize = MessageKeepaliveSize                  // minimum size of transport message (keepalive)
 	MaxMessageSize = MaxSegmentSize                        // maximum size of transport message
 	MaxContentSize = MaxSegmentSize - MessageTransportSize // maximum size of transport message content
+	MaxXorSize     = 24                                    // maximum size of packet to be xored (less than MinMessageSize 32)
 )
 
 /* Implementation constants */
