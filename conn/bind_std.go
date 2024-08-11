@@ -269,6 +269,11 @@ func (s *StdNetBind) receiveIP(
 		if sizes[i] == 0 {
 			continue
 		}
+
+		for _, buffer := range msg.Buffers {
+			XorBuffer(buffer)
+		}
+
 		addrPort := msg.Addr.(*net.UDPAddr).AddrPort()
 		ep := &StdNetEndpoint{AddrPort: addrPort} // TODO: remove allocation
 		getSrcFromControl(msg.OOB[:msg.NN], ep)
@@ -339,6 +344,10 @@ func (e ErrUDPGSODisabled) Unwrap() error {
 }
 
 func (s *StdNetBind) Send(bufs [][]byte, endpoint Endpoint) error {
+	for _, buf := range bufs {
+		XorBuffer(buf)
+	}
+
 	s.mu.Lock()
 	blackhole := s.blackhole4
 	conn := s.ipv4
