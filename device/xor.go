@@ -6,6 +6,10 @@
 package device
 
 func xorBuf(buf []byte, value uint8) {
+	if value == 'R' {
+		goto packetType
+	}
+
 	buf[23] ^= value
 	buf[22] ^= value
 	buf[21] ^= value
@@ -26,6 +30,7 @@ func xorBuf(buf []byte, value uint8) {
 	buf[6] ^= value
 	buf[5] ^= value
 	buf[4] ^= value
+packetType:
 	buf[3] ^= value
 	buf[2] ^= value
 	buf[1] ^= value
