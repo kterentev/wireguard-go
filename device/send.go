@@ -14,11 +14,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kterentev/wireguard-go/conn"
+	"github.com/kterentev/wireguard-go/tun"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
-	"github.com/kterentev/wireguard-go/conn"
-	"github.com/kterentev/wireguard-go/tun"
 )
 
 /* Outbound flow
@@ -76,7 +76,6 @@ var fakeHttpRequest = []byte{
 	0x61, 0x6e, 0x67, 0x75, 0x61, 0x67, 0x65, 0x3a, 0x20, 0x65, 0x6e, 0x2d,
 	0x75, 0x73, 0x0d, 0x0a,
 }
-
 
 /* Some HTTP response
  *
@@ -264,7 +263,7 @@ func (device *Device) SendHandshakeCookie(initiatingElem *QueueHandshakeElement)
 
 	// device.features.xor check omitted intentionally since elem value.xorValue DO NOT change without the feature
 	if initiatingElem.xorValue != 0 {
-		XorBuffer(cookie, initiatingElem.xorValue)
+		xorBuf(cookie, initiatingElem.xorValue)
 	}
 
 	if device.features.packet {

@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kterentev/wireguard-go/conn"
 	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/net/ipv4"
 	"golang.org/x/net/ipv6"
-	"github.com/kterentev/wireguard-go/conn"
 )
 
 type QueueHandshakeElement struct {
@@ -142,7 +142,7 @@ func (device *Device) RoutineReceiveIncoming(maxBatchSize int, recv conn.Receive
 				if packet[1] != 0 && packet[1] == packet[2] && packet[1] == packet[3] {
 					xorValue = packet[1]
 
-					XorBuffer(packet, xorValue)
+					xorBuf(packet, xorValue)
 				} else {
 					xorValue = 0
 				}

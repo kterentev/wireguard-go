@@ -137,7 +137,7 @@ func (peer *Peer) SendBuffers(buffers [][]byte) error {
 	if peer.device.features.xor {
 		if xorValue := uint8(peer.xorValue.Load()); xorValue != 0 {
 			for _, buffer := range buffers {
-				XorBuffer(buffer, xorValue)
+				xorBuf(buffer, xorValue)
 			}
 		}
 	}
