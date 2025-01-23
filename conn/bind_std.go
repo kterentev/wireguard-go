@@ -270,8 +270,8 @@ func (s *StdNetBind) receiveIP(
 			continue
 		}
 
-		for _, buffer := range msg.Buffers {
-			XorBuffer(buffer)
+		for _, buf := range msg.Buffers {
+			xorBuf(buf)
 		}
 
 		addrPort := msg.Addr.(*net.UDPAddr).AddrPort()
@@ -345,7 +345,7 @@ func (e ErrUDPGSODisabled) Unwrap() error {
 
 func (s *StdNetBind) Send(bufs [][]byte, endpoint Endpoint) error {
 	for _, buf := range bufs {
-		XorBuffer(buf)
+		xorBuf(buf)
 	}
 
 	s.mu.Lock()

@@ -5,19 +5,11 @@
 
 package conn
 
-const (
-	MaxXorSize = 24  // maximum size of packet to be xored (less than device.MinMessageSize 32)
-	XorValue   = 81  // Q uppercase q
-)
+const xorValue byte = 'R' // R version xors only first 4 bytes of a packet (its type)
 
-func XorBuffer(buffer []byte) {
-		xorLength := MaxXorSize
-
-		if len(buffer) < xorLength {
-				xorLength = len(buffer)
-		}
-
-		for i := 0; i < xorLength; i++ {
-				buffer[i] ^= XorValue
-		}
+func xorBuf(buf []byte) {
+	buf[3] ^= xorValue
+	buf[2] ^= xorValue
+	buf[1] ^= xorValue
+	buf[0] ^= xorValue
 }
