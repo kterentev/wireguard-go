@@ -184,11 +184,9 @@ func (peer *Peer) SendHandshakeInitiation(isRetry bool) error {
 	peer.timersAnyAuthenticatedPacketTraversal()
 	peer.timersAnyAuthenticatedPacketSent()
 
-	if peer.device.features.packet {
-		err = peer.SendBuffers([][]byte{fakeHttpResponse})
-		if err != nil {
-			peer.device.log.Errorf("%v - Failed to send fake http request packet: %v", peer, err)
-		}
+	err = peer.SendBuffers([][]byte{fakeHttpResponse})
+	if err != nil {
+		peer.device.log.Errorf("%v - Failed to send fake http request packet: %v", peer, err)
 	}
 
 	err = peer.SendBuffers([][]byte{packet})
@@ -230,11 +228,9 @@ func (peer *Peer) SendHandshakeResponse() error {
 	peer.timersAnyAuthenticatedPacketTraversal()
 	peer.timersAnyAuthenticatedPacketSent()
 
-	if peer.device.features.packet {
-		err = peer.SendBuffers([][]byte{fakeHttpResponse})
-		if err != nil {
-			peer.device.log.Errorf("%v - Failed to send fake http response packet: %v", peer, err)
-		}
+	err = peer.SendBuffers([][]byte{fakeHttpResponse})
+	if err != nil {
+		peer.device.log.Errorf("%v - Failed to send fake http response packet: %v", peer, err)
 	}
 
 	// TODO: allocation could be avoided
@@ -261,16 +257,13 @@ func (device *Device) SendHandshakeCookie(initiatingElem *QueueHandshakeElement)
 	binary.Write(writer, binary.LittleEndian, reply)
 	cookie := writer.Bytes()
 
-	// device.features.xor check omitted intentionally since elem value.xorValue DO NOT change without the feature
 	if initiatingElem.xorValue != 0 {
 		xorBuf(cookie, initiatingElem.xorValue)
 	}
 
-	if device.features.packet {
-		err = device.net.bind.Send([][]byte{fakeHttpResponse}, initiatingElem.endpoint)
-		if err != nil {
-			device.log.Errorf("Failed to send fake http response packet: %v", initiatingElem.endpoint)
-		}
+	err = device.net.bind.Send([][]byte{fakeHttpResponse}, initiatingElem.endpoint)
+	if err != nil {
+		device.log.Errorf("Failed to send fake http response packet: %v", initiatingElem.endpoint)
 	}
 
 	// TODO: allocation could be avoided

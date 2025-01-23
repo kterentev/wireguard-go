@@ -14,11 +14,11 @@ import (
 	"runtime"
 	"strconv"
 
-	"golang.org/x/sys/unix"
 	"github.com/kterentev/wireguard-go/conn"
 	"github.com/kterentev/wireguard-go/device"
 	"github.com/kterentev/wireguard-go/ipc"
 	"github.com/kterentev/wireguard-go/tun"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -30,12 +30,10 @@ const (
 	ENV_WG_TUN_FD             = "WG_TUN_FD"
 	ENV_WG_UAPI_FD            = "WG_UAPI_FD"
 	ENV_WG_PROCESS_FOREGROUND = "WG_PROCESS_FOREGROUND"
-	ENV_WG_PACKET_HANDSHAKE   = "WG_PACKET_HANDSHAKE"
-	ENV_WG_PACKET_XOR         = "WG_PACKET_XOR"
 )
 
 func printUsage() {
-	fmt.Printf("Usage: %s [-f/--foreground] [-p/--packet] [-x/--xor] INTERFACE-NAME\n", os.Args[0])
+	fmt.Printf("Usage: %s [-f/--foreground] INTERFACE-NAME\n", os.Args[0])
 }
 
 func warning() {
@@ -68,41 +66,27 @@ func main() {
 	warning()
 
 	var foreground bool
-	var packet bool
-	var xor bool
 	var interfaceName string
 
-	if len(os.Args) < 2 || len(os.Args) > 5 {
+	if len(os.Args) < 2 {
 		printUsage()
 		return
 	}
 
-	for _, arg := range os.Args[1 : len(os.Args) - 1] {
+	for _, arg := range os.Args[1 : len(os.Args)-1] {
 		switch arg {
 		case "-f", "--foreground":
 			foreground = true
-		case "-p", "--packet":
-			packet = true
-		case "-x", "--xor":
-			xor = true
 		default:
 			printUsage()
 			return
 		}
 	}
 
-	interfaceName = os.Args[len(os.Args) - 1]
+	interfaceName = os.Args[len(os.Args)-1]
 
 	if !foreground {
 		foreground = os.Getenv(ENV_WG_PROCESS_FOREGROUND) == "1"
-	}
-
-	if !packet {
-		packet = os.Getenv(ENV_WG_PACKET_HANDSHAKE) == "1"
-	}
-
-	if !xor {
-		xor = os.Getenv(ENV_WG_PACKET_XOR) == "1"
 	}
 
 	// get log level (default: info)
@@ -192,8 +176,6 @@ func main() {
 		env = append(env, fmt.Sprintf("%s=3", ENV_WG_TUN_FD))
 		env = append(env, fmt.Sprintf("%s=4", ENV_WG_UAPI_FD))
 		env = append(env, fmt.Sprintf("%s=1", ENV_WG_PROCESS_FOREGROUND))
-		env = append(env, fmt.Sprintf("%s=%s", ENV_WG_PACKET_HANDSHAKE, os.Getenv(ENV_WG_PACKET_HANDSHAKE)))
-		env = append(env, fmt.Sprintf("%s=%s", ENV_WG_PACKET_XOR, os.Getenv(ENV_WG_PACKET_XOR)))
 		files := [3]*os.File{}
 		if os.Getenv("LOG_LEVEL") != "" && logLevel != device.LogLevelSilent {
 			files[0], _ = os.Open(os.DevNull)
@@ -235,7 +217,7 @@ func main() {
 		return
 	}
 
-	device := device.NewDevice(tdev, conn.NewDefaultBind(), logger, packet, xor)
+	device := device.NewDevice(tdev, conn.NewDefaultBind(), logger)
 
 	logger.Verbosef("Device started")
 

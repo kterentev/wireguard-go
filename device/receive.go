@@ -138,14 +138,11 @@ func (device *Device) RoutineReceiveIncoming(maxBatchSize int, recv conn.Receive
 
 			packet := bufsArrs[i][:size]
 
-			if device.features.xor {
-				if packet[1] != 0 && packet[1] == packet[2] && packet[1] == packet[3] {
-					xorValue = packet[1]
-
-					xorBuf(packet, xorValue)
-				} else {
-					xorValue = 0
-				}
+			if packet[1] != 0 && packet[1] == packet[2] && packet[1] == packet[3] {
+				xorValue = packet[1]
+				xorBuf(packet, xorValue)
+			} else {
+				xorValue = 0
 			}
 
 			msgType := binary.LittleEndian.Uint32(packet[:4])
@@ -317,9 +314,7 @@ func (device *Device) RoutineHandshake(id int) {
 			}
 
 			// set xor value
-			if elem.xorValue != 0 {
-				entry.peer.xorValue.Store(uint64(elem.xorValue))
-			}
+			entry.peer.xorValue = elem.xorValue
 
 			// consume reply
 
@@ -388,9 +383,7 @@ func (device *Device) RoutineHandshake(id int) {
 			}
 
 			// set xor value
-			if elem.xorValue != 0 {
-				peer.xorValue.Store(uint64(elem.xorValue))
-			}
+			peer.xorValue = elem.xorValue
 
 			// update timers
 
@@ -426,9 +419,7 @@ func (device *Device) RoutineHandshake(id int) {
 			}
 
 			// set xor value
-			if elem.xorValue != 0 {
-				peer.xorValue.Store(uint64(elem.xorValue))
-			}
+			peer.xorValue = elem.xorValue
 
 			// update endpoint
 			peer.SetEndpointFromPacket(elem.endpoint)
