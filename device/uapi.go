@@ -118,6 +118,7 @@ func (device *Device) IpcGetOperation(w io.Writer) error {
 			sendf("last_handshake_time_nsec=%d", nano)
 			sendf("tx_bytes=%d", peer.txBytes.Load())
 			sendf("rx_bytes=%d", peer.rxBytes.Load())
+			sendf("xor_value=%d", peer.xorValue)
 			sendf("persistent_keepalive_interval=%d", peer.persistentKeepaliveInterval.Load())
 
 			device.allowedips.EntriesForPeer(peer, func(prefix netip.Prefix) bool {
@@ -359,6 +360,16 @@ func (device *Device) handlePeerLine(peer *ipcSetPeer, key, value string) error 
 
 		// Send immediate keepalive if we're turning it on and before it wasn't on.
 		peer.pkaOn = old == 0 && secs != 0
+
+	case "xor_value":
+		device.log.Verbosef("%v - UAPI: Updating xor value", peer.Peer)
+
+		xorValue, err := strconv.ParseUint(value, 10, 8)
+		if err != nil {
+			return ipcErrorf(ipc.IpcErrorInvalid, "failed to set xor value: %w", err)
+		}
+
+		peer.xorValue = uint8(xorValue)
 
 	case "replace_allowed_ips":
 		device.log.Verbosef("%v - UAPI: Removing all allowedips", peer.Peer)
