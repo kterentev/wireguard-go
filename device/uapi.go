@@ -110,12 +110,18 @@ func (device *Device) IpcGetOperation(w io.Writer) error {
 			}
 			peer.endpoint.Unlock()
 
-			nano := peer.lastHandshakeNano.Load()
-			secs := nano / time.Second.Nanoseconds()
-			nano %= time.Second.Nanoseconds()
+			handshakeNano := peer.lastHandshakeNano.Load()
+			handshakeSecs := handshakeNano / time.Second.Nanoseconds()
+			handshakeNano %= time.Second.Nanoseconds()
 
-			sendf("last_handshake_time_sec=%d", secs)
-			sendf("last_handshake_time_nsec=%d", nano)
+			transportNano := peer.lastTransportNano.Load()
+			transportSecs := transportNano / time.Second.Nanoseconds()
+			transportNano %= time.Second.Nanoseconds()
+
+			sendf("last_handshake_time_sec=%d", handshakeSecs)
+			sendf("last_handshake_time_nsec=%d", handshakeNano)
+			sendf("last_transport_time_sec=%d", transportSecs)
+			sendf("last_transport_time_nsec=%d", transportNano)
 			sendf("tx_bytes=%d", peer.txBytes.Load())
 			sendf("rx_bytes=%d", peer.rxBytes.Load())
 			sendf("xor_value=%d", peer.xorValue)

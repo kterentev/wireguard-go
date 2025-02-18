@@ -542,6 +542,7 @@ func (peer *Peer) RoutineSequentialReceiver(maxBatchSize int) {
 			peer.timersAnyAuthenticatedPacketReceived()
 		}
 		if dataPacketReceived {
+			peer.lastTransportNano.Store(device.time.now.UnixNano())
 			peer.timersDataReceived()
 		}
 		if len(bufs) > 0 {

@@ -86,6 +86,11 @@ type Device struct {
 		mtu    atomic.Int32
 	}
 
+	time struct {
+		c   chan struct{}
+		now time.Time
+	}
+
 	ipcMutex sync.RWMutex
 	closed   chan struct{}
 	log      *Logger
@@ -295,6 +300,7 @@ func NewDevice(tunDevice tun.Device, bind conn.Bind, logger *Logger) *Device {
 	}
 	device.tun.mtu.Store(int32(mtu))
 	device.peers.keyMap = make(map[NoisePublicKey]*Peer)
+	device.time.c = make(chan struct{})
 	device.rate.limiter.Init()
 	device.indexTable.Init()
 
@@ -321,6 +327,10 @@ func NewDevice(tunDevice tun.Device, bind conn.Bind, logger *Logger) *Device {
 	device.queue.encryption.wg.Add(1) // RoutineReadFromTUN
 	go device.RoutineReadFromTUN()
 	go device.RoutineTUNEventReader()
+
+	// start time worker
+	device.state.stopping.Add(1)
+	go device.RoutineTimeUpdater()
 
 	return device
 }
@@ -384,6 +394,9 @@ func (device *Device) Close() {
 	// Remove peers before closing queues,
 	// because peers assume that queues are active.
 	device.RemoveAllPeers()
+
+	// Signal time updater to stop its routine
+	close(device.time.c)
 
 	// We kept a reference to the encryption and decryption queues,
 	// in case we started any new peers that might write to them.
